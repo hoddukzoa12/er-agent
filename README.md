@@ -198,3 +198,7 @@ uv run python evals/guard_eval.py          # 가드레일 (3스레드 동시, 3�
 ## 데이터 출처
 
 [국립중앙의료원 전국 응급의료기관 정보 조회 서비스](https://www.data.go.kr/data/15000563/openapi.do) (공공데이터포털). API 호출에는 개인 인증키가 필요합니다.
+
+## 라이선스
+
+[MIT](LICENSE)
