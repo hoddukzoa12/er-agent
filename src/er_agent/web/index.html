@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>응급실 수용 에이전트</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f5f7; --panel: #fff; --ink: #1b1f24; --muted: #667085; --line: #e4e7ec;
+    --red: #d92d20; --red-soft: #fef3f2; --green: #079455; --green-soft: #ecfdf3;
+    --amber: #dc6803; --amber-soft: #fffaeb; --gray-soft: #f2f4f7; --blue: #1570ef; --nv: #76b900;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", sans-serif; color: var(--ink); background: var(--bg); }
+  header { display: flex; align-items: center; gap: 16px; padding: 10px 20px; background: #101828; color: #fff; flex-wrap: wrap; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 700; letter-spacing: -0.2px; }
+  header h1 span { color: #fda29b; }
+  .badge-nv { font-size: 11px; color: #101828; background: var(--nv); padding: 2px 8px; border-radius: 99px; font-weight: 700; }
+  .seg { display: inline-flex; background: #1d2939; border-radius: 8px; padding: 3px; }
+  .seg button { border: 0; background: none; color: #d0d5dd; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .seg button.on { background: #fff; color: #101828; font-weight: 700; }
+  header .spacer { flex: 1; }
+  header select { background: #1d2939; color: #fff; border: 1px solid #344054; border-radius: 6px; padding: 5px 8px; }
+  main { display: grid; grid-template-columns: 380px 1fr 420px; height: calc(100vh - 52px); }
+  @media (max-width: 1200px) { main { grid-template-columns: 1fr; height: auto; } #map { height: 360px; } }
+  .col { overflow-y: auto; padding: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .card h3 { margin: 0 0 10px; font-size: 13px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+  label { font-size: 12px; color: var(--muted); display: block; margin: 8px 0 4px; }
+  textarea, input, select.full { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; font: inherit; background: #fff; }
+  textarea { min-height: 96px; resize: vertical; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { font-size: 12px; padding: 3px 9px; border-radius: 99px; background: var(--gray-soft); border: 1px solid var(--line); cursor: pointer; }
+  .chip:hover { border-color: var(--ink); }
+  .btn { width: 100%; margin-top: 12px; padding: 11px; border: 0; border-radius: 8px; background: var(--red); color: #fff; font-weight: 700; font-size: 15px; cursor: pointer; }
+  .btn:disabled { opacity: .5; cursor: wait; }
+  .btn.sec { background: #101828; font-size: 13px; padding: 9px; }
+  #steps { font-size: 12.5px; }
+  #steps div { padding: 5px 0 5px 18px; position: relative; border-bottom: 1px dashed var(--line); color: #344054; }
+  #steps div::before { content: ""; position: absolute; left: 4px; top: 11px; width: 7px; height: 7px; border-radius: 50%; background: var(--nv); }
+  #steps div.err::before { background: var(--red); }
+  #steps div.msg { color: var(--ink); font-weight: 600; }
+  #steps div.msg::before { background: var(--blue); }
+  #steps .t { color: var(--muted); font-size: 11px; margin-right: 6px; font-variant-numeric: tabular-nums; }
+  #map { height: 100%; min-height: 360px; }
+  .assess .sum { font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+  .pill { display: inline-block; font-size: 11.5px; padding: 2px 8px; border-radius: 99px; margin: 2px 4px 2px 0; border: 1px solid var(--line); background: var(--gray-soft); }
+  .pill.crit { background: var(--red-soft); color: var(--red); border-color: #fecdca; font-weight: 700; }
+  .pill.need { background: #eff8ff; color: var(--blue); border-color: #b2ddff; }
+  .script { margin-top: 10px; background: #f9fafb; border-left: 3px solid var(--blue); padding: 8px 10px; font-size: 13px; border-radius: 4px; }
+  .banner119 { background: var(--red); color: #fff; padding: 12px 14px; border-radius: 10px; font-weight: 700; font-size: 15px; margin-bottom: 12px; }
+  .summary { display: flex; gap: 8px; margin-bottom: 10px; font-size: 12px; color: var(--muted); flex-wrap: wrap; align-items: center; }
+  .hosp { border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 10px; padding: 11px 12px; margin-bottom: 9px; background: #fff; cursor: pointer; }
+  .hosp.A { border-left-color: var(--green); }
+  .hosp.B { border-left-color: var(--amber); }
+  .hosp.X { border-left-color: #98a2b3; opacity: .72; }
+  .hosp .top { display: flex; align-items: baseline; gap: 8px; }
+  .hosp .rank { font-weight: 800; font-size: 16px; width: 22px; }
+  .hosp .name { font-weight: 700; flex: 1; }
+  .hosp .eta { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tier { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 99px; }
+  .tier.A { background: var(--green-soft); color: var(--green); }
+  .tier.B { background: var(--amber-soft); color: var(--amber); }
+  .tier.X { background: var(--gray-soft); color: #475467; }
+  .meta { font-size: 12px; color: var(--muted); margin: 3px 0 6px 30px; }
+  .reasons { margin: 0 0 0 30px; padding: 0; list-style: none; font-size: 12.5px; }
+  .reasons li { margin: 2px 0; }
+  .reasons li::before { content: "· "; color: var(--muted); }
+  .quote { margin: 6px 0 0 30px; font-size: 12px; color: #475467; background: #f9fafb; padding: 6px 8px; border-radius: 6px; }
+  .beds { display: flex; gap: 12px; margin-left: 30px; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .beds b.neg { color: var(--red); }
+  .actions { display: flex; gap: 6px; margin: 8px 0 0 30px; }
+  .actions input { flex: 1; padding: 5px 8px; font-size: 12px; }
+  .actions button { font-size: 12px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--line); background: #fff; cursor: pointer; }
+  .actions button.rej { color: var(--red); border-color: #fecdca; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 12.5px; margin: 6px 0; }
+  .alert { background: var(--amber-soft); border: 1px solid #fedf89; color: #93370d; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row input[type=checkbox] { width: auto; }
+  .empty { color: var(--muted); text-align: center; padding: 30px 10px; }
+  .callbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  .callbar .btn { width: auto; margin: 0; padding: 9px 14px; font-size: 13.5px; flex: 1; background: #101828; }
+  .callbar label { margin: 0; display: flex; gap: 4px; align-items: center; font-size: 12px; }
+  .callbar select { width: auto; padding: 5px; border: 1px solid var(--line); border-radius: 6px; }
+  .win { background: var(--green); color: #fff; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .win b { font-size: 16px; }
+  .win.none { background: var(--amber); }
+  .calls { display: grid; gap: 8px; margin-bottom: 12px; }
+  .call { border: 1px solid var(--line); border-radius: 10px; background: #fff; overflow: hidden; }
+  .call .hd { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #f9fafb; font-size: 13px; }
+  .call .hd .nm { font-weight: 700; flex: 1; }
+  .st { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 99px; background: var(--gray-soft); color: #475467; }
+  .st.dialing, .st.talking, .st.holding { background: #eff8ff; color: var(--blue); }
+  .st.talking::before, .st.dialing::before { content: "● "; animation: blink 1s infinite; }
+  .st.accept { background: var(--green-soft); color: var(--green); }
+  .st.reject, .st.error { background: var(--red-soft); color: var(--red); }
+  .st.conditional, .st.no_answer { background: var(--amber-soft); color: var(--amber); }
+  @keyframes blink { 50% { opacity: .2; } }
+  .call .lines { padding: 6px 10px 8px; font-size: 12.5px; max-height: 190px; overflow-y: auto; }
+  .call .ln { margin: 4px 0; display: flex; gap: 6px; }
+  .call .ln .who { flex: none; }
+  .call .ln .heard { display: block; color: var(--muted); font-size: 11.5px; }
+  .call .ln button { border: 0; background: none; cursor: pointer; padding: 0 2px; font-size: 12px; }
+  .call.done .lines { max-height: 0; padding: 0 10px; }
+  .call.done.open .lines { max-height: 190px; padding: 6px 10px 8px; }
+  .muted-list { font-size: 12px; color: var(--muted); margin: -4px 0 10px; }
+  .num-icon { background: #fff; border: 2px solid; border-radius: 50%; width: 26px; height: 26px; display: grid; place-items: center; font-weight: 800; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🚑 응급실 <span>수용</span> 에이전트</h1>
+  <span class="badge-nv">NVIDIA Nemotron</span>
+  <div class="seg" id="modeSeg">
+    <button data-mode="ems" class="on">119 구급대원</button>
+    <button data-mode="guardian">보호자</button>
+  </div>
+  <div class="spacer"></div>
+  <select id="source" title="데이터 소스"><option value="">실시간 데이터</option></select>
+  <span id="llmState" style="font-size:12px;color:#98a2b3"></span>
+</header>
+<main>
+  <section class="col">
+    <div class="card">
+      <h3>환자 · 위치</h3>
+      <label>현재 위치 (지도를 클릭해도 됩니다)</label>
+      <select id="preset" class="full"></select>
+      <label id="patientLabel">환자 상태 (나이, 성별, 주증상, 활력징후, 의식)</label>
+      <textarea id="patient" placeholder="예) 68세 남성, 30분 전부터 좌측 편마비와 구음장애, 혈압 180/100, 의식 명료"></textarea>
+      <div class="chips" id="examples"></div>
+      <button class="btn" id="run">수용 가능한 응급실 찾기</button>
+    </div>
+    <div class="card" id="eventCard" hidden>
+      <h3>현장 상황 전달 → 에이전트가 재계획</h3>
+      <input id="eventText" placeholder="예) 성빈센트 거절, 소아과 당직 없음 / 환자 의식 저하">
+      <button class="btn sec" id="sendEvent">전달</button>
+      <div class="row" style="margin-top:10px">
+        <input type="checkbox" id="monitor"><label for="monitor" style="margin:0">실시간 감시 (60초마다 데이터 확인 · 변화 시 알림)</label>
+      </div>
+    </div>
+    <div class="card">
+      <h3>에이전트 진행</h3>
+      <div id="steps"><div class="empty" style="padding:8px">대기 중</div></div>
+    </div>
+  </section>
+  <section id="map"></section>
+  <section class="col" id="right">
+    <div id="alerts"></div>
+    <div id="banner"></div>
+    <div id="assessment"></div>
+    <div id="callsPanel" hidden>
+      <div class="callbar">
+        <button class="btn" id="startCalls">🤖 AI가 병원에 동시 문의</button>
+        <label>동시 <select id="conc"><option>2</option><option selected>3</option><option>4</option><option>5</option></select>회선</label>
+        <label><input type="checkbox" id="voiceOn" checked style="width:auto">음성</label>
+      </div>
+      <div id="winBox"></div>
+      <div class="calls" id="calls"></div>
+      <div class="muted-list" id="skipped"></div>
+    </div>
+    <div id="results"><div class="card empty">환자 상태와 위치를 입력하면<br>실시간 병상·중증질환 수용 가능 여부·진료제한 메시지를<br>에이전트가 읽고 연락 순서를 제안합니다.</div></div>
+  </section>
+</main>
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const EXAMPLES = {
+  ems: [
+    ["가와사키 의심 소아", "7세 남아, 38.5도 발열 5일째, 눈 충혈, 입술 갈라짐, 손발 부종. 의식 명료, 맥박 130. 가와사키 의심"],
+    ["뇌졸중 의심", "68세 남성, 40분 전부터 좌측 편마비와 구음장애, 혈압 185/100, 의식 명료, 혈당 132"],
+    ["손가락 절단", "45세 남성, 프레스 작업 중 우측 검지·중지 절단, 절단지 보관 중, 활력징후 안정"],
+    ["임신 진통", "32세 여성, 임신 35주, 규칙적 진통 5분 간격, 질출혈 소량, 혈압 150/95"],
+    ["흉통", "59세 남성, 30분 지속 흉통과 식은땀, 혈압 90/60, 맥박 110, 심전도상 ST 상승 의심"],
+  ],
+  guardian: [
+    ["아이 고열·경련", "4살 딸이 열이 40도인데 방금 1분 정도 몸을 떨며 경련했어요. 지금은 멈췄고 졸려해요"],
+    ["어르신 어지럼", "75세 아버지가 갑자기 어지럽다고 하시고 말이 조금 어눌해졌어요"],
+    ["손 베임", "요리하다 칼에 손바닥을 깊게 베였는데 피가 잘 안 멈춰요. 30대 남자"],
+  ],
+};
+let mode = "ems", session = null, busy = false, monitorTimer = null, origin = null;
+const map = L.map("map", { zoomControl: true });
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "© OpenStreetMap" }).addTo(map);
+const layer = L.layerGroup().addTo(map);
+let originMarker = null;
+
+function setOrigin(lat, lon, fly = true) {
+  origin = [lat, lon];
+  if (originMarker) originMarker.remove();
+  originMarker = L.circleMarker(origin, { radius: 9, color: "#fff", weight: 3, fillColor: "#1570ef", fillOpacity: 1 }).addTo(map).bindTooltip("현재 위치");
+  if (fly) map.setView(origin, 12);
+}
+map.on("click", (e) => { setOrigin(e.latlng.lat, e.latlng.lng, false); $("#preset").value = ""; });
+
+function renderExamples() {
+  $("#examples").innerHTML = EXAMPLES[mode].map(([k, v], i) => `<span class="chip" data-i="${i}">${esc(k)}</span>`).join("");
+  document.querySelectorAll("#examples .chip").forEach((el) => el.onclick = () => { $("#patient").value = EXAMPLES[mode][el.dataset.i][1]; });
+  $("#patientLabel").textContent = mode === "ems" ? "환자 상태 (나이, 성별, 주증상, 활력징후, 의식)" : "어떤 상황인가요? 편하게 적어주세요";
+  $("#run").textContent = mode === "ems" ? "수용 가능한 응급실 찾기" : "지금 갈 수 있는 응급실 찾기";
+}
+document.querySelectorAll("#modeSeg button").forEach((b) => b.onclick = () => {
+  document.querySelectorAll("#modeSeg button").forEach((x) => x.classList.toggle("on", x === b));
+  mode = b.dataset.mode; renderExamples();
+});
+
+function step(msg, cls = "") {
+  const box = $("#steps");
+  if (box.querySelector(".empty")) box.innerHTML = "";
+  const t = new Date().toTimeString().slice(0, 8);
+  box.insertAdjacentHTML("beforeend", `<div class="${cls}"><span class="t">${t}</span>${esc(msg)}</div>`);
+  box.lastElementChild.scrollIntoView({ block: "nearest" });
+}
+
+async function stream(url, body) {
+  busy = true; $("#run").disabled = true; $("#sendEvent").disabled = true; $("#startCalls").disabled = true;
+  try {
+    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = "";
+    while (true) {
+      const { value, done } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i; while ((i = buf.indexOf("\n")) >= 0) { const line = buf.slice(0, i); buf = buf.slice(i + 1); if (line.trim()) handle(JSON.parse(line)); }
+    }
+  } catch (e) { step("연결 오류: " + e, "err"); }
+  busy = false; $("#run").disabled = false; $("#sendEvent").disabled = false; $("#startCalls").disabled = false;
+}
+
+function handle(ev) {
+  if (ev.type === "session") { session = ev.id; $("#eventCard").hidden = false; }
+  else if (ev.type === "step") step(ev.msg);
+  else if (ev.type === "message") step(ev.text, "msg");
+  else if (ev.type === "error") step(ev.msg, "err");
+  else if (ev.type === "assessment") renderAssessment(ev.assessment);
+  else if (ev.type === "plan") renderPlan(ev.plan);
+  else if (ev.type === "call") renderCall(ev);
+  else if (ev.type === "utter") renderUtter(ev);
+  else if (ev.type === "wave_done") renderWave(ev.result);
+  else if (ev.type === "guard") {
+    const el = document.getElementById("call-" + ev.call);
+    if (el) el.querySelector(".lines").insertAdjacentHTML("beforeend",
+      `<div class="ln" style="color:var(--red)"><span class="who">🛡</span><span>가드레일 차단 — 기록에 없는 사실: ${esc(ev.blocked.join(", "))}</span></div>`);
+    step("가드레일: 기록에 없는 사실 발화 차단 (" + ev.blocked.join(", ") + ")", "err");
+  }
+  else if (ev.type === "monitor") {
+    step(`감시 ${ev.time} · ${ev.alerts.length ? ev.alerts.length + "건 변화" : "변화 없음"}`);
+    ev.alerts.forEach((a) => $("#alerts").insertAdjacentHTML("afterbegin", `<div class="alert">⚠️ ${esc(a)}</div>`));
+  }
+}
+
+const ACUITY = { critical: "위급 (KTAS 1-2 추정)", urgent: "긴급 (KTAS 3 추정)", less_urgent: "준응급 (KTAS 4-5 추정)" };
+const AGE = { newborn: "신생아", infant: "영아", child: "소아", adult: "성인", elderly: "고령", unknown: "연령 미상" };
+function renderAssessment(a) {
+  $("#banner").innerHTML = a.advise_119 && mode === "guardian"
+    ? `<div class="banner119">🚨 지금 바로 119에 신고하세요.<br><span style="font-weight:400;font-size:13px">직접 이동보다 구급차가 안전합니다. 아래 병원 정보는 참고용입니다.</span></div>` : "";
+  $("#assessment").innerHTML = `<div class="card assess"><h3>환자 평가 · 진단 아님</h3>
+    <div class="sum">${esc(a.summary)}</div>
+    <span class="pill ${a.acuity === "critical" ? "crit" : ""}">${ACUITY[a.acuity] || a.acuity}</span>
+    <span class="pill">${AGE[a.age_group] || a.age_group}</span>
+    ${a.needs_pediatric ? '<span class="pill need">소아 진료 필요</span>' : ""}
+    ${a.needs_isolation ? '<span class="pill need">격리 필요</span>' : ""}
+    ${(a.required_labels || []).map((r) => `<span class="pill need">${esc(r)}</span>`).join("")}
+    ${(a.red_flags || []).length ? `<div style="margin-top:6px;font-size:12.5px;color:var(--red)">위험 징후: ${esc(a.red_flags.join(", "))}</div>` : ""}
+    ${a.rationale ? `<div style="margin-top:6px;font-size:12.5px;color:var(--muted)">${esc(a.rationale)}</div>` : ""}
+    ${mode === "ems" && a.call_script ? `<div class="script">📞 수용 문의 멘트<br>${esc(a.call_script)}</div>` : ""}
+  </div>`;
+}
+
+const ST = { queued: "대기", dialing: "발신 중", talking: "통화 중", holding: "수락·상위 확인", accept: "수용 확정",
+  reject: "거절", conditional: "조건부", no_answer: "응답 없음", cancelled: "취소", skipped: "미발신", error: "오류" };
+const shortName = (n) => n.replace(/^(학교법인|의료법인|재단법인|사회복지법인)?\S*?(학원|의료재단|재단)(?=\S)/, "").replace("의과대학부속", "").replace("의과대학", "");
+let player = null;
+function play(url) { if (player) player.pause(); player = new Audio(url); player.play(); }
+function renderCall(ev) {
+  let el = document.getElementById("call-" + ev.call);
+  if (ev.status === "queued" || ev.status === "skipped") {
+    if (el) el.remove();
+    if (ev.status === "skipped") $("#skipped").textContent = "나머지 후보는 수용이 확정되어 발신하지 않았습니다 (병원 전화선 부담 최소화).";
+    return;
+  }
+  if (!el) {
+    $("#calls").insertAdjacentHTML("beforeend", `<div class="call" id="call-${ev.call}"><div class="hd"><span class="nm">${esc(shortName(ev.name))}</span>
+      <span style="font-size:12px;color:var(--muted)">${Math.round(ev.eta)}분</span><span class="st"></span></div><div class="lines"></div></div>`);
+    el = document.getElementById("call-" + ev.call);
+    el.querySelector(".hd").onclick = () => el.classList.toggle("open");
+  }
+  const st = el.querySelector(".st");
+  st.className = "st " + ev.status; st.textContent = ST[ev.status] + (ev.reason && !["dialing", "talking"].includes(ev.status) ? " · " + ev.reason : "");
+  if (["reject", "cancelled", "no_answer", "error"].includes(ev.status)) el.classList.add("done");
+}
+function renderUtter(ev) {
+  const el = document.getElementById("call-" + ev.call); if (!el) return;
+  const heard = ev.speaker === "hospital" && ev.heard && ev.heard !== ev.text ? `<span class="heard">AI가 들은 말(ASR): ${esc(ev.heard)}</span>` : "";
+  const btn = ev.audio ? `<button title="듣기" data-a="${ev.audio}">🔊</button>` : "";
+  el.querySelector(".lines").insertAdjacentHTML("beforeend",
+    `<div class="ln"><span class="who">${ev.speaker === "ai" ? "🤖" : "🏥"}</span><span>${btn}${esc(ev.text)}${heard}</span></div>`);
+  const box = el.querySelector(".lines"); box.scrollTop = box.scrollHeight;
+  el.querySelectorAll("[data-a]").forEach((b) => b.onclick = (e) => { e.stopPropagation(); play(b.dataset.a); });
+}
+function renderWave(r) {
+  const w = r.accepted;
+  $("#winBox").innerHTML = w
+    ? `<div class="win">✅ <b>${esc(shortName(w.name))}</b> 수용 확정 · 약 ${Math.round(w.eta)}분 · ☎ ${esc(w.tel)}<br>
+       <span style="font-size:12.5px">${r.dialed}곳 문의 · ${r.elapsed_s}초 · 거절 ${r.rejected.length}곳은 공유 보드에 기록되어 다른 구급대에 표시됩니다</span></div>`
+    : `<div class="win none">⚠️ 확정된 병원이 없습니다. ${r.conditional.length ? "조건부: " + r.conditional.map((c) => shortName(c.name) + "(" + c.reason + ")").join(", ") + " — 구급대원 직접 연결 필요" : "다음 후보로 다시 문의하세요."}</div>`;
+  if (w) {
+    L.marker([w.lat, w.lon], { icon: L.divIcon({ className: "", html: '<div class="num-icon" style="border-color:#079455;background:#079455;color:#fff">✓</div>', iconSize: [26, 26] }) }).addTo(layer);
+    map.setView([w.lat, w.lon], 13);
+  }
+}
+$("#startCalls").onclick = () => {
+  if (!session || busy) return;
+  $("#calls").innerHTML = ""; $("#winBox").innerHTML = ""; $("#skipped").textContent = "";
+  stream("/api/calls", { session, concurrency: +$("#conc").value, voice: $("#voiceOn").checked });
+};
+
+function bedTxt(label, pair) {
+  const [f, b] = pair || [];
+  if (f == null && !b) return "";
+  return `<span>${label} <b class="${f != null && f <= 0 ? "neg" : ""}">${f ?? "-"}</b>/${b ?? "-"}</span>`;
+}
+
+function renderPlan(p) {
+  $("#callsPanel").hidden = mode !== "ems";
+  layer.clearLayers();
+  setOrigin(p.origin[0], p.origin[1], false);
+  const color = { A: "#079455", B: "#dc6803", X: "#98a2b3" };
+  const live = p.candidates.filter((c) => c.tier !== "X"), out = p.candidates.filter((c) => c.tier === "X");
+  const card = (c, i) => `
+    <div class="hosp ${c.tier}" data-h="${c.hpid}">
+      <div class="top"><span class="rank">${c.tier === "X" ? "–" : i + 1}</span><span class="name">${esc(c.name)}</span>
+        <span class="tier ${c.tier}">${{ A: "수용 가능성 높음", B: "전화 확인", X: "제외" }[c.tier]}</span></div>
+      <div class="meta">${esc(c.level || "응급실")} · ${c.km}km · 약 <span class="eta">${Math.round(c.eta_min)}분</span> · ☎ ${esc(c.tel)} · 갱신 ${esc(c.updated_at)}</div>
+      <div class="beds">${bedTxt("응급실", c.beds.er)}${bedTxt("소아", c.beds.peds)}${bedTxt("중환자", c.beds.icu)}${bedTxt("수술실", c.beds.or)}</div>
+      <ul class="reasons">${c.reasons.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
+      ${c.verdict && c.verdict.quote && c.verdict.impact !== "none" ? `<div class="quote">병원 메시지: “${esc(c.verdict.quote)}”</div>` : ""}
+      ${c.tier !== "X" && mode === "ems" ? `<div class="actions"><input placeholder="거절 사유 (선택)" data-r="${c.hpid}"><button class="rej" data-rej="${c.hpid}">거절됨</button></div>` : ""}
+    </div>`;
+  $("#results").innerHTML = `
+    <div class="summary">데이터 기준 ${esc(p.data_time)} · ${p.source === "live" ? "실시간" : "재생 " + esc(p.source)}
+      <span class="tier A">수용 ${p.tiers.A}</span><span class="tier B">확인 ${p.tiers.B}</span><span class="tier X">제외 ${p.tiers.X}</span></div>
+    ${live.slice(0, 8).map(card).join("") || '<div class="card empty">조건을 만족하는 병원이 없습니다</div>'}
+    ${live.length > 8 ? `<details><summary>나머지 ${live.length - 8}곳</summary>${live.slice(8).map((c, i) => card(c, i + 8)).join("")}</details>` : ""}
+    ${out.length ? `<details ${out.some((c) => c.verdict) ? "open" : ""}><summary>제외된 병원 ${out.length}곳 · 이유 보기</summary>${out.map(card).join("")}</details>` : ""}`;
+  const bounds = [p.origin];
+  p.candidates.forEach((c) => {
+    const n = c.tier === "X" ? "×" : live.indexOf(c) + 1;
+    if (c.tier !== "X" && n > 8) return;
+    const icon = L.divIcon({ className: "", html: `<div class="num-icon" style="border-color:${color[c.tier]};color:${color[c.tier]}">${n}</div>`, iconSize: [26, 26] });
+    L.marker([c.lat, c.lon], { icon }).addTo(layer).bindPopup(`<b>${esc(c.name)}</b><br>${esc(c.reasons[0] || "")}`);
+    if (c.tier !== "X") bounds.push([c.lat, c.lon]);
+  });
+  map.fitBounds(bounds.slice(0, 7), { padding: [30, 30], maxZoom: 13 });
+  document.querySelectorAll(".hosp").forEach((el) => el.onclick = (e) => {
+    if (e.target.closest(".actions")) return;
+    const c = p.candidates.find((x) => x.hpid === el.dataset.h); map.setView([c.lat, c.lon], 14);
+  });
+  document.querySelectorAll("[data-rej]").forEach((b) => b.onclick = (e) => {
+    e.stopPropagation(); if (busy) return;
+    const reason = document.querySelector(`[data-r="${b.dataset.rej}"]`).value || "수용 불가";
+    stream("/api/reject", { session, hpid: b.dataset.rej, reason });
+  });
+}
+
+$("#run").onclick = () => {
+  const text = $("#patient").value.trim();
+  if (!text || !origin || busy) return;
+  $("#steps").innerHTML = ""; $("#alerts").innerHTML = ""; session = null;
+  $("#calls").innerHTML = ""; $("#winBox").innerHTML = ""; $("#skipped").textContent = "";
+  stream("/api/plan", { mode, text, lat: origin[0], lon: origin[1], replay: $("#source").value || null });
+};
+$("#sendEvent").onclick = () => {
+  const text = $("#eventText").value.trim(); if (!text || !session || busy) return;
+  step("현장: " + text, "msg"); $("#eventText").value = "";
+  stream("/api/event", { session, text });
+};
+$("#eventText").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#sendEvent").click(); });
+$("#monitor").onchange = (e) => {
+  clearInterval(monitorTimer);
+  if (e.target.checked) monitorTimer = setInterval(() => { if (session && !busy) stream("/api/monitor", { session }); }, 60000);
+};
+
+(async () => {
+  const meta = await (await fetch("/api/meta")).json();
+  $("#preset").innerHTML = meta.presets.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join("") + '<option value="">지도에서 선택한 위치</option>';
+  $("#preset").onchange = (e) => { const p = meta.presets[e.target.value]; if (p) setOrigin(p.lat, p.lon); };
+  $("#source").innerHTML += meta.snapshots.slice().reverse().map((s) => `<option value="${s}">재생 ${s.slice(4, 6)}/${s.slice(6, 8)} ${s.slice(8, 10)}:${s.slice(10, 12)}</option>`).join("");
+  $("#llmState").textContent = meta.llm ? "● Nemotron 연결됨" : "● LLM 키 없음 (규칙 모드)";
+  if (!meta.voice) { $("#voiceOn").checked = false; $("#voiceOn").disabled = true; $("#voiceOn").parentElement.title = "OpenShell 샌드박스: 음성(gRPC)은 정책상 비활성"; }
+  $("#preset").value = "3"; setOrigin(meta.presets[3].lat, meta.presets[3].lon);
+  renderExamples();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "er-agent",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "containers": [
+    {
+      "class_name": "ErAgent",
+      "image": "./Dockerfile",
+      "image_build_context": "../..",
+      // 1/4 vCPU, 1 GiB, 4 GB disk — the app peaks around 255 MB RSS
+      "instance_type": "basic",
+      "max_instances": 2
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "ER_AGENT", "class_name": "ErAgent" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ErAgent"] }]
+}

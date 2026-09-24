@@ -1,0 +1,9 @@
+define bot handoff to crew
+  "그 부분은 기록에 없어 정확하지 않습니다. 구급대원이 직접 말씀드리도록 바로 연결하겠습니다."
+
+# Every patient fact in the bot message must quote the dispatch record.
+define subflow check patient grounding
+  $grounded = execute check_patient_grounding
+  if not $grounded
+    bot handoff to crew
+    stop

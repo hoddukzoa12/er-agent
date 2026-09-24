@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="base.css"><body style="padding:64px 80px">
+<div class="kicker">NVIDIA OpenShell sandbox</div>
+<h2 style="font-size:44px">키는 들어가지 않고, 허용된 2곳 외에는 <span class="red">아무 데도</span> 못 나갑니다</h2>
+<div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:24px;margin-top:28px">
+ <div class="term" style="font-size:16px;overflow:hidden">$ deploy/openshell/verify.sh
+== probes from the agent&#x27;s Python interpreter
+<span style="color:#76b900">✅</span> expect <span style="color:#76b900">ALLOWED</span> | 1. real API keys are absent from the agent environment
+<span style="color:#76b900">✅</span> expect <span style="color:#76b900">ALLOWED</span> | 2. Nemotron via NIM with placeholder bearer (proxy injects real key)
+<span style="color:#76b900">✅</span> expect <span style="color:#76b900">ALLOWED</span> | 3. NEMC API with placeholder serviceKey (proxy injects real key)
+<span style="color:#76b900">✅</span> expect <span style="color:#ff6b5b">BLOCKED</span> | 4. exfiltrate patient data to an unknown host
+<span style="color:#76b900">✅</span> expect <span style="color:#ff6b5b">BLOCKED</span> | 5. send the key placeholder to another host
+<span style="color:#76b900">✅</span> expect <span style="color:#ff6b5b">BLOCKED</span> | 6. write method on the read-only public-data API
+<span style="color:#76b900">✅</span> expect <span style="color:#ff6b5b">BLOCKED</span> | 7. other service on the same public-data host
+<span style="color:#76b900">✅</span> expect <span style="color:#ff6b5b">BLOCKED</span> | 8. child process of the agent hitting a non-allowed path on an allowed host
+<span style="color:#76b900">✅</span> expect <span style="color:#ff6b5b">BLOCKED</span> | 9. bypass the proxy with a raw socket
+<span style="color:#76b900">✅</span> expect <span style="color:#ff6b5b">BLOCKED</span> | 10. tamper with agent code in /app
+10/10 probes behaved as the policy intends
+<span style="color:#76b900">✅</span> <span style="color:#ff6b5b">BLOCKED</span>  | curl is not in the policy binaries</div>
+ <div>
+  <div class="card"><div class="lbl" style="color:#76b900;font-weight:700">샌드박스 안의 API 키</div><div class="quote" style="font-family:Menlo;font-size:18px">NVIDIA_API_KEY=openshell:resolve:env:…<br>DATA_KEY=openshell:resolve:env:…</div><div class="lbl">프록시가 허용된 엔드포인트로 나갈 때만 실제 키로 치환</div></div>
+  <div class="card" style="margin-top:18px"><div class="lbl" style="color:#76b900;font-weight:700">허용 목록 (L7)</div><div class="lbl">NIM · POST /v1/chat/completions<br>공공데이터 · GET /B552657/ErmctInfoInqireService/*<br>실행 파일 · Python만</div></div>
+ </div>
+</div>
+<div class="term" style="margin-top:22px;font-size:15px;white-space:pre-wrap">운영 로그 · 의존성 라이브러리의 선언되지 않은 텔레메트리 전송 차단<br>[1790161477.653] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] <span style="color:#ff6b5b;font-weight:700">DENIED</span> /usr/local/bin/python3.13(37) -&gt; events.telemetry.data.nvidia.com:443 [policy:- engine:opa] [reason:endpoint events.telemetry.data.nvidi</div>
+</body>

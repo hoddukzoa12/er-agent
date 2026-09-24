@@ -1,0 +1,14 @@
+# NeMo Guardrails config for the AI caller's outgoing utterances.
+# Only the output rail runs in production: the utterance is drafted by the caller
+# agent, then checked here before it is spoken to the hospital.
+colang_version: "1.0"
+
+models:
+  - type: main
+    engine: nim
+    model: nvidia/nemotron-3-super-120b-a12b
+
+rails:
+  output:
+    flows:
+      - check patient grounding

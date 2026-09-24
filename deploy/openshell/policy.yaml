@@ -1,0 +1,46 @@
+# OpenShell sandbox policy for the ER dispatch agent.
+#
+# The agent handles patient descriptions and ambulance locations, so it may talk
+# to exactly two services, only through the Python interpreter, with L7 checks:
+#   - NVIDIA NIM (Nemotron): POST chat completions only
+#   - 국립중앙의료원 OpenAPI: GET on the emergency-department service only
+# Everything else (other hosts, other methods/paths, curl, pip, shells) is denied.
+# API keys never enter the sandbox: providers inject placeholders that the proxy
+# resolves only on these endpoints (see nemc-profile.yaml and README).
+version: 1
+
+filesystem_policy:
+  include_workdir: true
+  read_only: [/usr, /lib, /proc, /dev/urandom, /app, /etc, /var/log]
+  read_write: [/sandbox, /tmp, /dev/null]
+
+landlock:
+  compatibility: best_effort
+
+network_policies:
+  nemotron_nim:
+    name: nemotron-nim
+    endpoints:
+      - host: integrate.api.nvidia.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        rules:
+          - allow: { method: POST, path: /v1/chat/completions }
+          - allow: { method: GET, path: /v1/models }
+    binaries:
+      - { path: /usr/local/bin/python3* }
+      - { path: /app/.venv/bin/python* }
+
+  nemc_emergency_api:
+    name: nemc-emergency-api
+    endpoints:
+      - host: apis.data.go.kr
+        port: 80
+        protocol: rest
+        enforcement: enforce
+        rules:
+          - allow: { method: GET, path: /B552657/ErmctInfoInqireService/* }
+    binaries:
+      - { path: /usr/local/bin/python3* }
+      - { path: /app/.venv/bin/python* }

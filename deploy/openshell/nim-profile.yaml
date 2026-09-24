@@ -1,0 +1,28 @@
+# NVIDIA NIM credential scoped to this agent. The built-in `nvidia` profile also
+# admits /usr/bin/curl and every path on the host; this one admits only the
+# Python interpreter and only the two NIM calls the agent makes.
+id: er-nim
+display_name: NVIDIA NIM (ER agent)
+description: Nemotron chat completions for the ER dispatch agent
+category: inference
+inference_capable: false
+credentials:
+  - name: api_key
+    description: NVIDIA API key (nvapi-...)
+    env_vars: [NVIDIA_API_KEY]
+    required: true
+    auth_style: bearer
+    header_name: authorization
+discovery:
+  credentials: [api_key]
+endpoints:
+  - host: integrate.api.nvidia.com
+    port: 443
+    protocol: rest
+    enforcement: enforce
+    rules:
+      - allow: { method: POST, path: /v1/chat/completions }
+      - allow: { method: GET, path: /v1/models }
+binaries:
+  - /usr/local/bin/python3*
+  - /app/.venv/bin/python*

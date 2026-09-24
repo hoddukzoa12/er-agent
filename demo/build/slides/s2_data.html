@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="base.css"><body>
+<div class="kicker">국립중앙의료원 실시간 공공데이터 (2026-09-23 측정)</div>
+<h2>규칙으로는 읽을 수 없는 문장을 <span class="green">Nemotron</span>이 읽습니다</h2>
+<div class="grid" style="grid-template-columns: repeat(4, 1fr)">
+ <div class="card"><div class="num">416</div><div class="lbl">실시간 병상 보고 응급실<br>(갱신 중앙값 4분)</div></div>
+ <div class="card"><div class="num">27</div><div class="lbl">중증질환 수용 가능 여부<br>(심근경색·뇌졸중·수지접합…)</div></div>
+ <div class="card"><div class="num">738</div><div class="lbl">자유 문장 진료제한 메시지<br>(120개 병원)</div></div>
+ <div class="card"><div class="num red">⅔</div><div class="lbl">수용 정보 "정보미제공"<br>→ 결국 전화 확인이 필요</div></div>
+</div>
+<div class="grid" style="grid-template-columns: 1fr 1fr; margin-top:30px">
+ <div class="card"><div class="lbl" style="color:#76b900;font-weight:700">실제 진료제한 메시지</div>
+  <div class="quote">"소아심장분과 의료진 부재 … 진료 및 입원 일시적 불가(가와사키환자 포함)"</div>
+  <div class="quote">"인력 부족으로 월~금 9A ~ 5P30' 진료가능"</div>
+  <div class="quote">"[혈액종양내과] 신환 수용 불가, FU 환자 가능"</div></div>
+ <div class="card"><div class="lbl" style="color:#76b900;font-weight:700">Nemotron 판정 (환자 × 현재 요일·시각)</div>
+  <div class="quote">가와사키 의심 7세 → <b class="red">block</b></div>
+  <div class="quote">목요일 21:10 → <b class="red">block</b> (진료 시간 외)</div>
+  <div class="quote">본원 추적 환자 → <b class="green">none</b> · 타원 신환 → <b class="red">block</b></div>
+  <div class="lbl" style="margin-top:14px">까다로운 실제 메시지 평가 <b class="green">10 / 10</b></div></div>
+</div>
+</body>

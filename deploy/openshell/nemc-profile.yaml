@@ -1,0 +1,28 @@
+# Provider profile for the 공공데이터포털 service key used by the NEMC OpenAPI.
+# The key travels as the `serviceKey` query parameter; inside the sandbox the
+# agent only sees a placeholder, which the proxy swaps for the real key on
+# apis.data.go.kr requests to the emergency-department service.
+id: nemc
+display_name: NEMC Emergency API (data.go.kr)
+description: 국립중앙의료원 전국 응급의료기관 정보 조회 서비스
+category: data
+inference_capable: false
+credentials:
+  - name: service_key
+    description: 공공데이터포털 인증키 (Decoding)
+    env_vars: [DATA_KEY]
+    required: true
+    auth_style: query
+    query_param: serviceKey
+discovery:
+  credentials: [service_key]
+endpoints:
+  - host: apis.data.go.kr
+    port: 80
+    protocol: rest
+    enforcement: enforce
+    rules:
+      - allow: { method: GET, path: /B552657/ErmctInfoInqireService/* }
+binaries:
+  - /usr/local/bin/python3*
+  - /app/.venv/bin/python*
