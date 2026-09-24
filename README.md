@@ -7,11 +7,9 @@ NVIDIA Nemotron · NIM · NeMo Agent Toolkit · NeMo Guardrails · OpenShell · 
 
 ## 데모
 
-[![er-agent demo — AI가 세 병원에 동시에 수용 문의](demo/assets/calls.gif)](demo/er-agent-demo.mp4)
+https://github.com/user-attachments/assets/9400e4bd-fc65-476d-a1f2-73f4d758dd84
 
-▶️ **[전체 데모 영상 보기 (2분 33초, mp4)](demo/er-agent-demo.mp4)** — 한국어 내레이션(Magpie TTS)과 실제 통화 음성 포함
-
-<video src="demo/er-agent-demo.mp4" poster="demo/assets/poster.png" controls width="100%"></video>
+2분 33초 · 한국어 내레이션(Magpie TTS)과 실제 통화 음성 포함 · [mp4 원본](demo/er-agent-demo.mp4)
 
 | 장면 | 내용 |
 |---|---|
@@ -19,6 +17,8 @@ NVIDIA Nemotron · NIM · NeMo Agent Toolkit · NeMo Guardrails · OpenShell · 
 | AI 병렬 문의 | 상위 3곳에 동시에 음성 문의 → 1순위 우선 확정 · 나머지 정중히 취소 · 거절 사유 공유. 녹화 중 가드레일이 `혈압 · 산소포화도` 날조 발화를 실제로 차단 |
 | 현장 이벤트 | "확정 병원 취소 통보, 아이 상태 악화" → 에이전트가 거절 기록 · 중증도 상향 · 재계획 · 재문의 |
 | 보호자 모드 | 위험 징후가 있으면 119 신고를 먼저 권고하고, 지금 갈 수 있는 응급실을 안내 |
+
+<p align="center"><img src="demo/assets/calls.gif" alt="AI가 세 병원에 동시에 수용 문의하는 장면" width="85%"></p>
 
 > 병원 통화는 **시뮬레이션**입니다. 가상 병원 담당자는 실제 스냅샷(병상·진료제한 메시지)과 병원별 고정 난수로 만든 "숨은 사정"으로 답합니다. 실제 응급실에 테스트 전화를 걸지 마세요.
 
@@ -73,7 +73,7 @@ uv run er-agent serve                 # http://127.0.0.1:8000
 
 ```bash
 uv run er-agent plan "7세 남아, 38.5도 발열 5일째, 가와사키 의심" --at 37.2657,127.0000
-uv run er-agent plan "..." --replay 20260923173330   # 저장된 스냅샷으로 재현 (공공데이터 키 불필요)
+uv run er-agent plan "..." --replay <스냅샷 이름>     # data/cache/snapshots/ 의 스냅샷으로 재현 (공공데이터 키 불필요)
 uv run er-agent collect --every 300 --count 12        # 5분 간격 스냅샷 수집
 ```
 
